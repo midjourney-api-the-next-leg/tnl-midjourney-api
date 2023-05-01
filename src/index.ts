@@ -78,6 +78,9 @@ export declare namespace TNLTypes {
       messageId: string;
       success: boolean;
     };
+    interface MessageAndProgress extends BaseRequest {
+      progress: number | 'incomplete';
+    }
     type Seed = {
       seed: string;
     };
@@ -203,7 +206,7 @@ export class TNL {
       ref,
       webhookOverride,
     };
-    const res = await axios.post(`${BASE_URL}/imagine`, request, {
+    const res = await axios.post(`${BASE_URL}/describe`, request, {
       headers: this.createHeaders(),
     });
     return res.data as TNLTypes.Response.Message;
@@ -327,9 +330,8 @@ export class TNL {
    * Get the progress and status of any message that you have sent
    * @param messageId - The message ID of the message you want to get the progress of
    * @param expireMins - A timeout for the request in minutes. If the request takes longer than this, it will return as 'incomplete'
-   * @returns
    */
-  public async getProgressAndMessage(messageId: string, expireMins?: number) {
+  public async getMessageAndProgress(messageId: string, expireMins?: number) {
     let url = `${BASE_URL}/message/${messageId}`;
 
     if (expireMins) {
@@ -338,6 +340,6 @@ export class TNL {
     const res = await axios.get(url, {
       headers: this.createHeaders(),
     });
-    return res.data as TNLTypes.Response.Message;
+    return res.data as TNLTypes.Response.MessageAndProgress;
   }
 }

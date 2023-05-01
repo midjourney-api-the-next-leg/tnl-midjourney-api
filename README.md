@@ -15,7 +15,7 @@ npm install tnl-midjourney-api
 Here is an example of how to use the module to create an image from a prompt:
 
 ```javascript
-const { TNL } = require('tnl-midjourney-api');
+import { TNL } from 'tnl-midjourney-api';
 
 const TNL_API_KEY = 'your_api_key_here';
 const tnl = new TNL(TNL_API_KEY);
@@ -44,7 +44,7 @@ Creates a new image from a prompt.
 
 ### Get Progress and Message Result
 
-`tnl.getProgressAndMessage(messageId: string, expireMins?: number): Promise<TNLTypes.Webhooks.WebhookResponse>`
+`tnl.getMessageAndProgress(messageId: string, expireMins?: number): Promise<TNLTypes.Response.MessageAndProgress>`
 
 Gets the progress and response of a message.
 
