@@ -78,7 +78,7 @@ export declare namespace TNLTypes {
       messageId: string;
       success: boolean;
     };
-    interface MessageAndProgress extends BaseRequest {
+    interface MessageAndProgress extends Request.BaseRequest {
       progress: number | 'incomplete';
     }
     type Seed = {

@@ -1,6 +1,6 @@
 {
   "name": "tnl-midjourney-api",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Node.js module for interacting with Midjourney via The Next Leg",
   "keywords": [
     "typescript",
