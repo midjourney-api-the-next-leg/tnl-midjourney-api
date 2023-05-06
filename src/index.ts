@@ -13,10 +13,11 @@ export declare namespace TNLTypes {
     | 'V1'
     | 'V2'
     | 'V3'
-    | 'V3'
+    | 'V4'
     | '🔄'
     | '🪄 Make Variations'
     | '❤️ Favorite';
+
   type SlashCommands = 'relax' | 'fast' | 'private' | 'stealth';
 
   type Settings =
@@ -64,7 +65,7 @@ export declare namespace TNLTypes {
     type Info = BaseRequest;
 
     interface Buttons extends BaseRequest {
-      cmd: ButtonTypes;
+      button: ButtonTypes;
       buttonMessageId: string;
     }
 
@@ -80,6 +81,13 @@ export declare namespace TNLTypes {
     };
     interface MessageAndProgress extends Request.BaseRequest {
       progress: number | 'incomplete';
+      response:
+        | WebhookResponses.BaseResponse
+        | WebhookResponses.Imagine
+        | WebhookResponses.Describe
+        | WebhookResponses.Info
+        | WebhookResponses.Settings
+        | WebhookResponses.SlashCommand;
     }
     type Seed = {
       seed: string;
@@ -226,7 +234,7 @@ export class TNL {
     webhookOverride = '',
   ): Promise<TNLTypes.Response.Message> {
     const request: TNLTypes.Request.Buttons = {
-      cmd: button,
+      button,
       buttonMessageId,
       ref,
       webhookOverride,
@@ -310,17 +318,9 @@ export class TNL {
 
   /**
    * Get Information about your account including Fast Time Remaining, Job Mode, Queued Jobs and more.
-   * @param ref - A reference string that will be returned in the webhook response
-   * @param webhookOverride - A webhook URL that will be used instead of the one set in the dashboard
-   * @returns
    */
-  public async getInfo(ref = '', webhookOverride = '') {
-    const request: TNLTypes.Request.Info = {
-      ref,
-      webhookOverride,
-    };
-
-    const res = await axios.post(`${BASE_URL}/info`, request, {
+  public async getInfo() {
+    const res = await axios.get(`${BASE_URL}/info`, {
       headers: this.createHeaders(),
     });
     return res.data as TNLTypes.Response.Message;
