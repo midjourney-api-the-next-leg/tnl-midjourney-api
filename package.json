@@ -1,5 +1,5 @@
 {
-  "name": "tnl-midjourney-api",
+  "name": "siriondev/tnl-midjourney-api",
   "version": "1.0.3",
   "description": "A Node.js module for interacting with Midjourney via The Next Leg",
   "keywords": [
