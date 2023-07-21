@@ -3,6 +3,7 @@
 import axios from 'axios';
 
 const BASE_URL = 'https://api.thenextleg.io/v2';
+const BASE_URL_LOAD_BALANCER = 'https://api.thenextleg.io/loadBalancer';
 
 export declare namespace TNLTypes {
   type ButtonTypes =
@@ -73,11 +74,19 @@ export declare namespace TNLTypes {
       url: string;
     }
   }
+
   namespace Response {
     type Message = {
       createdAt: string;
       messageId: string;
       success: boolean;
+    };
+    type MessageLB = {
+      createdAt: string;
+      messageId: string;
+      success: boolean;
+      loadBalanceId: string,
+      accountId: string
     };
     interface MessageAndProgress extends Request.BaseRequest {
       progress: number | 'incomplete';
@@ -333,6 +342,94 @@ export class TNL {
    */
   public async getMessageAndProgress(messageId: string, expireMins?: number) {
     let url = `${BASE_URL}/message/${messageId}`;
+
+    if (expireMins) {
+      url += `?expireMins=${expireMins}`;
+    }
+    const res = await axios.get(url, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.MessageAndProgress;
+  }
+}
+
+export class TNLBalanced {
+  /* Private Instance Fields */
+  private token: string;
+
+  /* Constructor */
+  constructor(token: string) {
+    this.token = token;
+  }
+
+  private createHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${this.token}`,
+    };
+  }
+
+  /**
+   * Create a new image from a prompt using load balance feature
+   * @param prompt - The prompt you want to use to generate the image
+   * @param ref - A reference string that will be returned in the webhook response
+   * @param webhookOverride - A webhook URL that will be used instead of the one set in the dashboard
+   */
+  public async imagine(
+    prompt: string,
+    ref = '',
+    webhookOverride = '',
+  ): Promise<TNLTypes.Response.MessageLB> {
+    const request: TNLTypes.Request.Imagine = {
+      msg: prompt,
+      ref,
+      webhookOverride,
+    };
+
+    const res = await axios.post(`${BASE_URL_LOAD_BALANCER}/imagine`, request, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.MessageLB;
+  }
+
+
+  /**
+   * Use a button on an image. This can include upscale, variation, re-roll and more.
+   * @param button - A button type
+   * @param buttonMessageId - The buttonMessageId of the message that contains the button
+   * @param ref - A reference string that will be returned in the webhook response
+   * @param webhookOverride - A webhook URL that will be used instead of the one set in the dashboard
+   */
+  public async button(
+    button: TNLTypes.ButtonTypes,
+    buttonMessageId: string,
+    ref = '',
+    webhookOverride = '',
+
+  ): Promise<TNLTypes.Response.MessageLB> {
+    const request: TNLTypes.Request.Buttons = {
+      button,
+      buttonMessageId,
+      ref,
+      webhookOverride,
+    };
+    const res = await axios.post(`${BASE_URL_LOAD_BALANCER}/button`, request, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.MessageLB;
+  }
+
+  /**
+   * Get the progress and status of any message that you have sent
+   * @param messageId - The message ID of the message you want to get the progress of
+   * @param expireMins - A timeout for the request in minutes. If the request takes longer than this, it will return as 'incomplete'
+   */
+  public async getMessageAndProgress(
+    messageId: string,
+    loadBalanceId: string,
+    expireMins?: number
+  ) {
+    let url = `${BASE_URL_LOAD_BALANCER}/message/${messageId}?loadBalanceId=${loadBalanceId}`;
 
     if (expireMins) {
       url += `?expireMins=${expireMins}`;
