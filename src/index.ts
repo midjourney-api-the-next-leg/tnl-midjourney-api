@@ -413,6 +413,7 @@ export class TNLBalanced {
       ref,
       webhookOverride,
     };
+
     const res = await axios.post(`${BASE_URL_LOAD_BALANCER}/button`, request, {
       headers: this.createHeaders(),
     });
@@ -432,8 +433,9 @@ export class TNLBalanced {
     let url = `${BASE_URL_LOAD_BALANCER}/message/${messageId}?loadBalanceId=${loadBalanceId}`;
 
     if (expireMins) {
-      url += `?expireMins=${expireMins}`;
+      url += `&expireMins=${expireMins}`;
     }
+
     const res = await axios.get(url, {
       headers: this.createHeaders(),
     });
