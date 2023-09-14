@@ -3,6 +3,7 @@
 import axios from 'axios';
 
 const BASE_URL = 'https://api.thenextleg.io/v2';
+const BASE_URL_GET_UPSCALE = 'https://api.thenextleg.io';
 const BASE_URL_LOAD_BALANCER = 'https://api.thenextleg.io/loadBalancer';
 
 export declare namespace TNLTypes {
@@ -360,7 +361,7 @@ export class TNL {
     button: TNLTypes.ButtonTypes,
     buttonMessageId: string
   ): Promise<TNLTypes.Response.Upscale> {
-    const url = `${BASE_URL}/upscale-img-url?buttonMessageId=${buttonMessageId}&button=${button}`;
+    const url = `${BASE_URL_GET_UPSCALE}/upscale-img-url?buttonMessageId=${buttonMessageId}&button=${button}`;
 
     const res = await axios.get(url, {
       headers: this.createHeaders(),
