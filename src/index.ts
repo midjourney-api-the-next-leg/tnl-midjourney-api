@@ -102,6 +102,9 @@ export declare namespace TNLTypes {
     type Seed = {
       seed: string;
     };
+    type Upscale = {
+      url: string;
+    }
   }
 
   namespace WebhookResponses {
@@ -351,6 +354,18 @@ export class TNL {
       headers: this.createHeaders(),
     });
     return res.data as TNLTypes.Response.MessageAndProgress;
+  }
+
+  public async upscaleImgUrl(
+    button: TNLTypes.ButtonTypes,
+    buttonMessageId: string
+  ): Promise<TNLTypes.Response.Upscale> {
+    const url = `${BASE_URL}/upscale-img-url?buttonMessageId=${buttonMessageId}&button=${button}`;
+
+    const res = await axios.get(url, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.Upscale;
   }
 }
 
