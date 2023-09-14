@@ -357,6 +357,11 @@ export class TNL {
     return res.data as TNLTypes.Response.MessageAndProgress;
   }
 
+  /**
+   * Upscale an image
+   * @param button - A button type
+   * @param buttonMessageId - The buttonMessageId of the message that contains the button
+   */
   public async upscaleImgUrl(
     button: TNLTypes.ButtonTypes,
     buttonMessageId: string
