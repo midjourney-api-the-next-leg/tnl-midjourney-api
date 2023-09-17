@@ -1,8 +1,10 @@
 'use strict';
 
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const BASE_URL = 'https://api.thenextleg.io/v2';
+const BASE_URL_GET_UPSCALE = 'https://api.thenextleg.io';
+const BASE_URL_LOAD_BALANCER = 'https://api.thenextleg.io/loadBalancer';
 
 export declare namespace TNLTypes {
   type ButtonTypes =
@@ -69,16 +71,25 @@ export declare namespace TNLTypes {
       buttonMessageId: string;
     }
 
+    interface ButtonsLB extends Buttons {
+      loadBalanceId: string;
+    }
+
     interface Describe extends BaseRequest {
       url: string;
     }
   }
+
   namespace Response {
     type Message = {
       createdAt: string;
       messageId: string;
       success: boolean;
     };
+    interface MessageLB extends Message {
+      loadBalanceId: string;
+      accountId: string;
+    }
     interface MessageAndProgress extends Request.BaseRequest {
       progress: number | 'incomplete';
       response:
@@ -92,6 +103,9 @@ export declare namespace TNLTypes {
     type Seed = {
       seed: string;
     };
+    type Upscale = {
+      url: string;
+    }
   }
 
   namespace WebhookResponses {
@@ -249,7 +263,7 @@ export class TNL {
    * Get a seed of a message
    * @param messageId - The message ID of the message you want to get the seed for
    */
-  public async getSeed(messageId: string) {
+  public async getSeed(messageId: string): Promise<TNLTypes.Response.Seed> {
     const request = {
       messageId,
     };
@@ -286,7 +300,7 @@ export class TNL {
   /**
    * Get the settings available on your account
    */
-  public async getSettings() {
+  public async getSettings(): Promise<TNLTypes.Response.Message> {
     const res = await axios.get(`${BASE_URL}/settings`, {
       headers: this.createHeaders(),
     });
@@ -303,7 +317,7 @@ export class TNL {
     setting: TNLTypes.Settings,
     ref = '',
     webhookOverride = '',
-  ) {
+  ): Promise<TNLTypes.Response.Message> {
     const request: TNLTypes.Request.SetSettings = {
       settingsToggle: setting,
       ref,
@@ -319,7 +333,7 @@ export class TNL {
   /**
    * Get Information about your account including Fast Time Remaining, Job Mode, Queued Jobs and more.
    */
-  public async getInfo() {
+  public async getInfo(): Promise<TNLTypes.Response.Message> {
     const res = await axios.get(`${BASE_URL}/info`, {
       headers: this.createHeaders(),
     });
@@ -331,12 +345,166 @@ export class TNL {
    * @param messageId - The message ID of the message you want to get the progress of
    * @param expireMins - A timeout for the request in minutes. If the request takes longer than this, it will return as 'incomplete'
    */
-  public async getMessageAndProgress(messageId: string, expireMins?: number) {
+  public async getMessageAndProgress(messageId: string, expireMins?: number): Promise<TNLTypes.Response.MessageAndProgress> {
     let url = `${BASE_URL}/message/${messageId}`;
 
     if (expireMins) {
       url += `?expireMins=${expireMins}`;
     }
+    const res = await axios.get(url, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.MessageAndProgress;
+  }
+
+  /**
+   * Upscale an image
+   * @param button - A button type
+   * @param buttonMessageId - The buttonMessageId of the message that contains the button
+   */
+  public async upscaleImgUrl(
+    button: TNLTypes.ButtonTypes,
+    buttonMessageId: string
+  ): Promise<TNLTypes.Response.Upscale> {
+    const url = `${BASE_URL_GET_UPSCALE}/upscale-img-url?buttonMessageId=${buttonMessageId}&button=${button}`;
+
+    const res = await axios.get(url, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.Upscale;
+  }
+
+  /**
+   * Download an image safely
+   * @param url The URL of the image to download
+   */
+  public async getImage(
+    url: string
+  ): Promise<AxiosResponse> {
+    const data = {
+      imgUrl: url
+    };
+
+    const config: AxiosRequestConfig = {
+      url: `${BASE_URL_GET_UPSCALE}/getImage`,
+      method: 'post',
+      headers: this.createHeaders(),
+      data: data,
+      responseType: 'stream',
+      maxBodyLength: Infinity,
+    };
+
+    return await axios.request(config);
+  }
+}
+
+export class TNLBalanced {
+  /* Private Instance Fields */
+  private token: string;
+
+  /* Constructor */
+  constructor(token: string) {
+    this.token = token;
+  }
+
+  private createHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${this.token}`,
+    };
+  }
+
+  /**
+   * Create a new image from a prompt using load balance feature
+   * @param prompt - The prompt you want to use to generate the image
+   * @param ref - A reference string that will be returned in the webhook response
+   * @param webhookOverride - A webhook URL that will be used instead of the one set in the dashboard
+   */
+  public async imagine(
+    prompt: string,
+    ref = '',
+    webhookOverride = '',
+  ): Promise<TNLTypes.Response.MessageLB> {
+    const request: TNLTypes.Request.Imagine = {
+      msg: prompt,
+      ref,
+      webhookOverride,
+    };
+
+    const res = await axios.post(`${BASE_URL_LOAD_BALANCER}/imagine`, request, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.MessageLB;
+  }
+
+  /**
+   * Describe an image
+   * @param imgUrl - The URL of the image you want to describe
+   * @param ref - A reference string that will be returned in the webhook response
+   * @param webhookOverride - A webhook URL that will be used instead of the one set in the dashboard
+   */
+  public async describe(
+    imgUrl: string,
+    ref = '',
+    webhookOverride = '',
+  ): Promise<TNLTypes.Response.MessageLB> {
+    const request: TNLTypes.Request.Describe = {
+      url: imgUrl,
+      ref,
+      webhookOverride,
+    };
+    const res = await axios.post(`${BASE_URL_LOAD_BALANCER}/describe`, request, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.MessageLB;
+  }
+
+  /**
+   * Use a button on an image. This can include upscale, variation, re-roll and more.
+   * @param button - A button type
+   * @param buttonMessageId - The buttonMessageId of the message that contains the button
+   * @param loadBalanceId - The loadBalanceId received in the response to the imagine call
+   * @param ref - A reference string that will be returned in the webhook response
+   * @param webhookOverride - A webhook URL that will be used instead of the one set in the dashboard
+   */
+  public async button(
+    button: TNLTypes.ButtonTypes,
+    buttonMessageId: string,
+    loadBalanceId: string,
+    ref = '',
+    webhookOverride = '',    
+  ): Promise<TNLTypes.Response.MessageLB> {
+    const request: TNLTypes.Request.ButtonsLB = {
+      button,
+      buttonMessageId,
+      ref,
+      webhookOverride,
+      loadBalanceId,
+    };
+
+    const res = await axios.post(`${BASE_URL_LOAD_BALANCER}/button`, request, {
+      headers: this.createHeaders(),
+    });
+    return res.data as TNLTypes.Response.MessageLB;
+  }
+
+  /**
+   * Get the progress and status of any message that you have sent
+   * @param messageId - The message ID of the message you want to get the progress of
+   * @param loadBalanceId - The loadBalanceId received in the response to the imagine call
+   * @param expireMins - A timeout for the request in minutes. If the request takes longer than this, it will return as 'incomplete'
+   */
+  public async getMessageAndProgress(
+    messageId: string,
+    loadBalanceId: string,
+    expireMins?: number
+  ): Promise<TNLTypes.Response.MessageAndProgress> {
+    let url = `${BASE_URL_LOAD_BALANCER}/message/${messageId}?loadBalanceId=${loadBalanceId}`;
+
+    if (expireMins) {
+      url += `&expireMins=${expireMins}`;
+    }
+
     const res = await axios.get(url, {
       headers: this.createHeaders(),
     });
