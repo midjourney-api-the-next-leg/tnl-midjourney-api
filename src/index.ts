@@ -1,6 +1,6 @@
 'use strict';
 
-import axios from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const BASE_URL = 'https://api.thenextleg.io/v2';
 const BASE_URL_GET_UPSCALE = 'https://api.thenextleg.io';
@@ -372,6 +372,29 @@ export class TNL {
       headers: this.createHeaders(),
     });
     return res.data as TNLTypes.Response.Upscale;
+  }
+
+  /**
+   * Download an image safely
+   * @param url The URL of the image to download
+   */
+  public async getImage(
+    url: string
+  ): Promise<AxiosResponse> {
+    const data = {
+      imgUrl: url
+    };
+
+    const config: AxiosRequestConfig = {
+      url: `${BASE_URL_GET_UPSCALE}/getImage`,
+      method: 'post',
+      headers: this.createHeaders(),
+      data: data,
+      responseType: 'stream',
+      maxBodyLength: Infinity,
+    };
+
+    return await axios.request(config);
   }
 }
 
